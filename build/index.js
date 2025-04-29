@@ -67,9 +67,11 @@ async function initializeOrganizationId() {
         console.warn("Using default organizationid");
     }
 }
-if (!ZOHO_CLIENT_ID || !ZOHO_CLIENT_SECRET || !ZOHO_REFRESH_TOKEN) {
-    throw new Error("Required Zoho OAuth credentials not found in environment variables");
-}
+// if (!ZOHO_CLIENT_ID || !ZOHO_CLIENT_SECRET || !ZOHO_REFRESH_TOKEN) {
+//   throw new Error(
+//     "Required Zoho OAuth credentials not found in environment variables"
+//   );
+// }
 const ZOHO_ORGANIZATION_ID = await initializeOrganizationId();
 class ZohoMcpServer {
     constructor() {
