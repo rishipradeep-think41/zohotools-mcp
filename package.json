@@ -1,0 +1,33 @@
+{
+  "name": "@pipedream/zoho_books",
+  "version": "0.3.0",
+  "description": "Pipedream Zoho Books Components",
+  "main": "index.ts",
+  "type": "module",
+  "keywords": [
+    "pipedream",
+    "zoho_books"
+  ],
+  "homepage": "https://pipedream.com/apps/zoho_books",
+  "author": "(https://pipedream.com/)",
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.10.2",
+    "@pipedream/platform": "^3.0.3",
+    "dotenv": "^16.5.0",
+    "node-fetch": "^3.3.2",
+    "open": "^10.1.1",
+    "type-fest": "^4.40.0",
+    "typescript": "^5.8.3"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc && chmod 755 build/index.js"
+  },
+  "devDependencies": {
+    "@types/node": "^22.14.1",
+    "@types/node-fetch": "^2.6.12"
+  }
+}
