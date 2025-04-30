@@ -14,86 +14,6 @@ configDotenv();
 const ZOHO_CLIENT_ID = process.env.ZOHO_CLIENT_ID;
 const ZOHO_CLIENT_SECRET = process.env.ZOHO_CLIENT_SECRET;
 const ZOHO_REFRESH_TOKEN = process.env.ZOHO_REFRESH_TOKEN;
-const ZOHO_ACCESS_TOKEN = await refreshAccessToken();
-
-async function refreshAccessToken(): Promise<string> {
-  if (!ZOHO_REFRESH_TOKEN) {
-    throw new Error(
-      "No refresh token available. Please restart the application to initiate the OAuth flow."
-    );
-  }
-
-  try {
-    const response = await fetch("https://accounts.zoho.in/oauth/v2/token", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        refresh_token: ZOHO_REFRESH_TOKEN,
-        client_id: ZOHO_CLIENT_ID,
-        client_secret: ZOHO_CLIENT_SECRET,
-        grant_type: "refresh_token",
-      }).toString(),
-    });
-
-    const tokenData: TokenResponse = await response.json();
-    if (!response.ok || !tokenData.access_token) {
-      throw new Error(
-        `Failed to refresh token: ${tokenData.error || "Unknown"}`
-      );
-    }
-
-    const access_token = tokenData.access_token;
-    const expiresIn = tokenData.expires_in || 3600;
-    const tokenexpiry = Math.floor(Date.now() / 1000) + expiresIn;
-
-    return access_token;
-  } catch (error) {
-    console.error("Error refreshing access token:", error);
-    throw error;
-  }
-}
-
-async function fetchOrganizations() {
-  const accessToken = ZOHO_ACCESS_TOKEN;
-  const response = await fetch(
-    "https://www.zohoapis.in/books/v3/organizations",
-    {
-      headers: {
-        Authorization: `Zoho-oauthtoken ${accessToken}`,
-      },
-    }
-  );
-  const mainresponse = await response.json();
-  console.log(mainresponse);
-  return mainresponse;
-}
-
-async function initializeOrganizationId() {
-  try {
-    const orgsResponse = await fetchOrganizations();
-    if (
-      orgsResponse &&
-      orgsResponse.organizations &&
-      orgsResponse.organizations.length > 0
-    ) {
-      // Use the first organization by default, or let user choose if needed
-      return orgsResponse.organizations[0].organizationid;
-    } else {
-      console.warn("No organizations found. Using default organizationid.");
-    }
-  } catch (error) {
-    console.error("Error fetching organizations:", error);
-    console.warn("Using default organizationid");
-  }
-}
-
-// if (!ZOHO_CLIENT_ID || !ZOHO_CLIENT_SECRET || !ZOHO_REFRESH_TOKEN) {
-//   throw new Error(
-//     "Required Zoho OAuth credentials not found in environment variables"
-//   );
-// }
-
-const ZOHO_ORGANIZATION_ID = await initializeOrganizationId();
 
 export interface CreateInvoiceArgs {
   data: Record<string, any>;
@@ -220,8 +140,7 @@ class ZohoMcpServer {
     this.clientid = ZOHO_CLIENT_ID as string;
     this.clientSecret = ZOHO_CLIENT_SECRET as string;
     this.refresh_token = ZOHO_REFRESH_TOKEN as string;
-    this.access_token = ZOHO_ACCESS_TOKEN as string;
-    this.organizationid = ZOHO_ORGANIZATION_ID as string;
+    this.organizationid = "";
     this.setupToolHandlers();
 
     // Error handling
@@ -232,7 +151,7 @@ class ZohoMcpServer {
     });
   }
 
-  private async initializeOrganizationId(): Promise<void> {
+  private async initializeOrganizationId(): Promise<any> {
     try {
       const orgsResponse = await this.fetchOrganizations();
       if (
@@ -241,7 +160,7 @@ class ZohoMcpServer {
         orgsResponse.organizations.length > 0
       ) {
         // Use the first organization by default, or let user choose if needed
-        this.organizationid = orgsResponse.organizations[0].organizationid;
+        this.organizationid = orgsResponse.organizations[0].organization_id;
         console.error(`Set organizationid to: ${this.organizationid}`);
       } else {
         console.warn("No organizations found. Using default organizationid.");
@@ -263,7 +182,6 @@ class ZohoMcpServer {
       }
     );
     const mainresponse = await response.json();
-    console.log(mainresponse);
     return mainresponse;
   }
 
@@ -723,9 +641,9 @@ class ZohoMcpServer {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams({
-          refresh_token: this.refresh_token,
-          client_id: this.clientid,
-          client_secret: this.clientSecret,
+          refresh_token: String(this.refresh_token),
+          client_id: String(this.clientid),
+          client_secret: String(this.clientSecret),
           grant_type: "refresh_token",
         }).toString(),
       });
@@ -966,7 +884,9 @@ class ZohoMcpServer {
   async run() {
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
-    console.error("Zoho MCP server running on stdio");
+    console.log("Zoho MCP server running on stdio");
+    await this.refreshAccessToken();
+    await this.initializeOrganizationId();
   }
 }
 
