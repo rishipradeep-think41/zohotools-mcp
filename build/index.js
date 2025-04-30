@@ -3,6 +3,7 @@ import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { CallToolRequestSchema, ListToolsRequestSchema, } from "@modelcontextprotocol/sdk/types.js";
 import { configDotenv } from "dotenv";
+import * as tools from "./tools/index.js";
 configDotenv();
 // Environment variables required for OAuth
 const ZOHO_CLIENT_ID = process.env.ZOHO_CLIENT_ID;
@@ -52,227 +53,20 @@ class ZohoMcpServer {
     }
     async fetchOrganizations() {
         const accessToken = this.access_token;
-        console.log(accessToken);
         const response = await fetch("https://www.zohoapis.in/books/v3/organizations", {
             headers: {
                 Authorization: `Zoho-oauthtoken ${accessToken}`,
             },
         });
         const mainresponse = await response.json();
-        console.log(mainresponse);
         return mainresponse;
     }
     setupToolHandlers() {
-        this.server.setRequestHandler(ListToolsRequestSchema, async () => ({
-            tools: [
-                {
-                    name: "list_emails",
-                    description: "List recent emails from Gmail inbox",
-                    inputSchema: {
-                        type: "object",
-                        properties: {
-                            maxResults: {
-                                type: "number",
-                                description: "Maximum number of emails to return (default: 10)",
-                            },
-                            query: {
-                                type: "string",
-                                description: "Search query to filter emails",
-                            },
-                        },
-                    },
-                },
-                {
-                    name: "search_emails",
-                    description: "Search emails with advanced query",
-                    inputSchema: {
-                        type: "object",
-                        properties: {
-                            query: {
-                                type: "string",
-                                description: 'Gmail search query (e.g., "from:example@gmail.com has:attachment"). Examples:\n' +
-                                    '- "from:alice@example.com" (Emails from Alice)\n' +
-                                    '- "to:bob@example.com" (Emails sent to Bob)\n' +
-                                    '- "subject:Meeting Update" (Emails with "Meeting Update" in the subject)\n' +
-                                    '- "has:attachment filename:pdf" (Emails with PDF attachments)\n' +
-                                    '- "after:2024/01/01 before:2024/02/01" (Emails between specific dates)\n' +
-                                    '- "is:unread" (Unread emails)\n' +
-                                    '- "from:@company.com has:attachment" (Emails from a company domain with attachments)',
-                                required: true,
-                            },
-                            maxResults: {
-                                type: "number",
-                                description: "Maximum number of emails to return (default: 10)",
-                            },
-                        },
-                        required: ["query"],
-                    },
-                },
-                {
-                    name: "send_email",
-                    description: "Send a new email",
-                    inputSchema: {
-                        type: "object",
-                        properties: {
-                            to: {
-                                type: "string",
-                                description: "Recipient email address",
-                            },
-                            subject: {
-                                type: "string",
-                                description: "Email subject",
-                            },
-                            body: {
-                                type: "string",
-                                description: "Email body (can include HTML)",
-                            },
-                            cc: {
-                                type: "string",
-                                description: "CC recipients (comma-separated)",
-                            },
-                            bcc: {
-                                type: "string",
-                                description: "BCC recipients (comma-separated)",
-                            },
-                        },
-                        required: ["to", "subject", "body"],
-                    },
-                },
-                {
-                    name: "modify_email",
-                    description: "Modify email labels (archive, trash, mark read/unread)",
-                    inputSchema: {
-                        type: "object",
-                        properties: {
-                            id: {
-                                type: "string",
-                                description: "Email ID",
-                            },
-                            addLabels: {
-                                type: "array",
-                                items: { type: "string" },
-                                description: "Labels to add",
-                            },
-                            removeLabels: {
-                                type: "array",
-                                items: { type: "string" },
-                                description: "Labels to remove",
-                            },
-                        },
-                        required: ["id"],
-                    },
-                },
-                {
-                    name: "list_events",
-                    description: "List upcoming calendar events",
-                    inputSchema: {
-                        type: "object",
-                        properties: {
-                            maxResults: {
-                                type: "number",
-                                description: "Maximum number of events to return (default: 10)",
-                            },
-                            timeMin: {
-                                type: "string",
-                                description: "Start time in ISO format (default: now)",
-                            },
-                            timeMax: {
-                                type: "string",
-                                description: "End time in ISO format",
-                            },
-                        },
-                    },
-                },
-                {
-                    name: "create_event",
-                    description: "Create a new calendar event",
-                    inputSchema: {
-                        type: "object",
-                        properties: {
-                            summary: {
-                                type: "string",
-                                description: "Event title",
-                            },
-                            location: {
-                                type: "string",
-                                description: "Event location",
-                            },
-                            description: {
-                                type: "string",
-                                description: "Event description",
-                            },
-                            start: {
-                                type: "string",
-                                description: "Start time in ISO format",
-                            },
-                            end: {
-                                type: "string",
-                                description: "End time in ISO format",
-                            },
-                            attendees: {
-                                type: "array",
-                                items: { type: "string" },
-                                description: "List of attendee email addresses",
-                            },
-                        },
-                        required: ["summary", "start", "end"],
-                    },
-                },
-                {
-                    name: "update_event",
-                    description: "Update an existing calendar event",
-                    inputSchema: {
-                        type: "object",
-                        properties: {
-                            eventId: {
-                                type: "string",
-                                description: "Event ID to update",
-                            },
-                            summary: {
-                                type: "string",
-                                description: "New event title",
-                            },
-                            location: {
-                                type: "string",
-                                description: "New event location",
-                            },
-                            description: {
-                                type: "string",
-                                description: "New event description",
-                            },
-                            start: {
-                                type: "string",
-                                description: "New start time in ISO format",
-                            },
-                            end: {
-                                type: "string",
-                                description: "New end time in ISO format",
-                            },
-                            attendees: {
-                                type: "array",
-                                items: { type: "string" },
-                                description: "New list of attendee email addresses",
-                            },
-                        },
-                        required: ["eventId"],
-                    },
-                },
-                {
-                    name: "delete_event",
-                    description: "Delete a calendar event",
-                    inputSchema: {
-                        type: "object",
-                        properties: {
-                            eventId: {
-                                type: "string",
-                                description: "Event ID to delete",
-                            },
-                        },
-                        required: ["eventId"],
-                    },
-                },
-            ],
-        }));
+        this.server.setRequestHandler(ListToolsRequestSchema, async () => {
+            return {
+                tools: Object.values(tools),
+            };
+        });
         this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
             try {
                 if (!request.params.arguments) {
