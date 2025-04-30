@@ -1,0 +1,29 @@
+# Smithery configuration file: https://smithery.ai/docs/config#smitheryyaml
+
+startCommand:
+  type: stdio
+  configSchema:
+    # JSON Schema defining the configuration options for the MCP.
+    type: object
+    required:
+      - clientId
+      - clientSecret
+      - refreshToken
+    properties:
+      clientId:
+        type: string
+        description: Zoho OAuth client ID
+      clientSecret:
+        type: string
+        description: Zoho OAuth client secret
+      refreshToken:
+        type: string
+        description: Zoho OAuth refresh token
+  commandFunction:
+    # A JS function that produces the CLI command based on the given config to start the MCP on stdio.
+    |-
+    (config) => ({ command: 'node', args: ['build/index.js'], env: { ZOHO_CLIENT_ID: config.clientId, ZOHO_CLIENT_SECRET: config.clientSecret, ZOHO_REFRESH_TOKEN: config.refreshToken } })
+  exampleConfig:
+    clientId: your_client_id_here
+    clientSecret: your_client_secret_here
+    refreshToken: your_refresh_token_here
